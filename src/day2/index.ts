@@ -12,15 +12,24 @@ const ranges: Range[] = lines.split(",").map((r) => {
 });
 
 function isIdInvalid(id: number) {
-  const idString = id.toString();
-  if (idString.length % 2 === 1) return false; // TODO: this could be optimized to not even evaluate odd length ids
-  const halfPoint = idString.length / 2;
-  const [firstHalf, secondHalf] = [
-    idString.slice(0, halfPoint),
-    idString.slice(halfPoint),
-  ];
+  const idStr = id.toString();
+  const maxSequenceLength =
+    idStr.length % 2 === 0 ? idStr.length / 2 : Math.floor(idStr.length / 2);
 
-  return firstHalf === secondHalf;
+  for (let index = 1; index <= maxSequenceLength; index++) {
+    if (hasSequence(idStr, index)) return true;
+  }
+  return false;
+}
+
+function hasSequence(word: string, n: number) {
+  if (!(word.length % n === 0) && n !== 1) return false;
+  const subStringToCheck = word.substring(0, n);
+  for (let i = 0; i < word.length; i += n) {
+    const subString = word.substring(i, i + n);
+    if (subString !== subStringToCheck) return false;
+  }
+  return true;
 }
 
 function calculateInvalidIds(range: Range): number[] {
