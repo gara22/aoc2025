@@ -9,29 +9,48 @@ const rows = lines.split("\n");
 type JoltageRating = {
   originalIndex: number;
   value: string;
+  eliminated: boolean;
 };
 
 const banks = rows.map((bankStr) =>
-  Array.from(bankStr).map((b, i) => ({ originalIndex: i, value: b }))
+  Array.from(bankStr).map((b, i) => ({
+    value: b,
+    originalIndex: i,
+    eliminated: false,
+  }))
 );
+
+const RESULT_LENGTH = 12;
+
+function bankToValue(bank: JoltageRating[]): string[] {
+  return bank.map((b) => b.value);
+}
 
 function findLargestJoltage(bank: JoltageRating[]): number {
   const sorted = bank.toSorted((a, b) => +b.value - +a.value);
-  let [first, second] = [sorted[0], sorted[1]];
-  if (first.originalIndex < second.originalIndex) {
-    return parseInt(first.value + second.value);
+  const digits: JoltageRating[] = [];
+
+  while (digits.length < RESULT_LENGTH) {
+    inner: for (let index = 0; index < sorted.length; index++) {
+      const joltage = sorted[index];
+      const startIndex = digits[digits.length - 1]?.originalIndex + 1 || 0;
+      const endIndex = bank.length - (RESULT_LENGTH - digits.length) + 1;
+      const shortenedArray = bankToValue(bank).slice(startIndex, endIndex);
+
+      const shouldPushDigit =
+        shortenedArray.includes(joltage.value) && !joltage.eliminated;
+
+      if (shouldPushDigit) {
+        for (let i = joltage.originalIndex; i >= 0; i--) {
+          bank[i].eliminated = true;
+        }
+        digits.push(joltage);
+        break inner;
+      }
+    }
   }
 
-  if (first.originalIndex === bank.length - 1) {
-    first = second;
-  }
-
-  const arrayAfterLargest = bank.slice(first.originalIndex + 1);
-  const largestInRest = arrayAfterLargest.toSorted(
-    (a, b) => +b.value - +a.value
-  )[0];
-
-  return parseInt(first.value + largestInRest.value);
+  return parseInt(digits.map((j) => j.value).join(""));
 }
 
 const result = banks.reduce((acc, bank, i) => {
@@ -40,4 +59,4 @@ const result = banks.reduce((acc, bank, i) => {
   return acc + largest;
 }, 0);
 
-console.log(result);
+console.log("end result: " + result);
