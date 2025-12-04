@@ -40,19 +40,37 @@ function getNeighbors(point: Point, g: Point[][]) {
   return neighbors;
 }
 
-function solve() {
-  let res = 0;
-  grid.forEach((row) => {
+function countAccessible(g: Point[][]) {
+  const points: Point[] = [];
+  g.forEach((row) => {
     row.forEach((point) => {
       if (point.value !== "@") {
       } else if (
-        getNeighbors(point, grid).filter((p) => p.value === "@").length < 4
+        getNeighbors(point, g).filter((p) => p.value === "@").length < 4
       ) {
-        res++;
+        points.push(point);
       }
     });
   });
-  return res;
+  return points;
+}
+
+function removePoints(g: Point[][], points: Point[]) {
+  points.forEach((p) => (g[p.row][p.column].value = "x"));
+  return g;
+}
+
+function solve() {
+  let res = 0;
+  let g = grid;
+  while (true) {
+    const pointsToRemove = countAccessible(g);
+    if (pointsToRemove.length === 0) {
+      return res;
+    }
+    res += pointsToRemove.length;
+    g = removePoints(grid, pointsToRemove);
+  }
 }
 
 console.log(solve());
