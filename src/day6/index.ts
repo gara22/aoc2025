@@ -5,19 +5,51 @@ const lines = await readFile(`./src/day6/${file}`, {
 });
 const rows = lines.split("\n");
 
-const input = rows.map((r) => {
-  return r
-    .split(" ")
-    .map((el) => el.trim())
-    .filter((f) => f !== "");
-});
+const blockLengths = rows[rows.length - 1]
+  .split(new RegExp(/\*|\+/))
+  .map((q) => q.length)
+  .slice(1);
 
-const numberOfRows = input.length;
+blockLengths[blockLengths.length - 1] =
+  blockLengths[blockLengths.length - 1] + 1;
 
-function calculateColumn(numbers: number[], symbol: string) {
+function parseRow(row: string) {
+  let innerIndex = 0;
+
+  return blockLengths.map((blockSize, i) => {
+    let str: string = "";
+    for (let j = innerIndex; j < innerIndex + blockSize; j++) {
+      const element = row[j];
+      str += element;
+    }
+    innerIndex += blockSize + 1;
+    return str;
+  });
+}
+
+const parsedRows = rows.map((r) => parseRow(r));
+
+const numberOfRows = parsedRows.length;
+
+function transformColumn(col: string[]): number[] {
+  const numArr: number[] = [];
+  const digitLength = col[0].length;
+  for (let index = 0; index < digitLength; index++) {
+    let strDigit = "";
+    col.forEach((c, j) => {
+      strDigit += c[index];
+    });
+
+    numArr.push(parseInt(strDigit));
+  }
+  return numArr;
+}
+
+function calculateColumn(numbers: number[], symbolParam: string) {
+  const symbol = symbolParam.trim();
   const initValue = symbol === "*" ? 1 : 0;
   return numbers.reduce((acc, n) => {
-    if (symbol === "*") {
+    if (symbol.includes("*")) {
       return acc * n;
     }
     return acc + n;
@@ -25,15 +57,17 @@ function calculateColumn(numbers: number[], symbol: string) {
 }
 
 function solve() {
-  return input[0].reduce((acc, _, i) => {
-    const subArray: number[] = [];
-
-    const symbol = input[numberOfRows - 1][i];
+  return parsedRows[0].reduce((acc, _, i) => {
+    const subArray: string[] = [];
+    const symbol = parsedRows[numberOfRows - 1][i];
     for (let j = 0; j < numberOfRows - 1; j++) {
-      subArray.push(parseInt(input[j][i]));
+      subArray.push(parsedRows[j][i]);
     }
-    const columnValue = calculateColumn(subArray, symbol);
-    // console.log(`value of column ${subArray}, ${symbol} is ${columnValue}`);
+    const transformedColumn = transformColumn(subArray);
+    const columnValue = calculateColumn(transformedColumn, symbol);
+    // console.log(
+    //   `value of column ${transformedColumn}, ${symbol} is ${columnValue}`
+    // );
     return acc + columnValue;
   }, 0);
 }
