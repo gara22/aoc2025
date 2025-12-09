@@ -20,6 +20,9 @@ type Point = {
   column: number;
   value: string;
 };
+function getId(p: Point) {
+  return p.row.toString() + p.column.toString();
+}
 
 function prettyPrintGrid(g: Point[][]) {
   const prettyGrid = g.map((r) => r.map((p) => p.value));
@@ -27,38 +30,87 @@ function prettyPrintGrid(g: Point[][]) {
   console.log(str);
 }
 
-let splitCount = 0;
-function drawBeam(start: Point, g: Point[][]) {
-  let nextGrid = g;
-  if (start.row >= numberOfRows - 1) {
-    return nextGrid;
+function findNextSplitterOrEnd(startPoint: Point, g: Point[][]): Point {
+  // we ran out of grid
+  if (startPoint.row >= numberOfRows - 1) {
+    return startPoint;
   }
 
-  const pointBelow = nextGrid[start.row + 1][start.column];
-
-  if (pointBelow.value === ".") {
-    pointBelow.value = "|";
-    return drawBeam(pointBelow, nextGrid);
+  if (startPoint.value === "^") {
+    return startPoint;
   }
 
-  if (pointBelow.value === "^") {
-    splitCount++;
+  return findNextSplitterOrEnd(g[startPoint.row + 1][startPoint.column], g);
+}
 
-    const neighborPoints = [
-      nextGrid[pointBelow.row][start.column - 1],
-      nextGrid[pointBelow.row][start.column + 1],
-    ];
-    neighborPoints[0].value = "|";
-    neighborPoints[1].value = "|";
-    drawBeam(neighborPoints[0], nextGrid);
-    return drawBeam(neighborPoints[1], nextGrid);
+function findAllRoutes(
+  startPoint: Point,
+  endPoint: Point,
+  g: Point[][],
+  cache: Map<string, number>
+): number {
+  if (cache.has(getId(startPoint))) {
+    return cache.get(getId(startPoint))!;
   }
+  let routeCount = 0;
+
+  const neighborPoints = [
+    g[startPoint.row][startPoint.column - 1],
+    g[startPoint.row][startPoint.column + 1],
+  ];
+
+  //first we go left
+  let found = findNextSplitterOrEnd(neighborPoints[0], g);
+  if (getId(found) === getId(endPoint)) {
+    routeCount++;
+  }
+
+  if (found.value === "^") {
+    const foundRouteCount = findAllRoutes(found, endPoint, g, cache);
+    routeCount += foundRouteCount;
+  }
+
+  //then we go right
+  found = findNextSplitterOrEnd(neighborPoints[1], g);
+  if (getId(found) === getId(endPoint)) {
+    routeCount++;
+    return routeCount;
+  }
+
+  if (found.value === "^") {
+    const foundRouteCount = findAllRoutes(found, endPoint, g, cache);
+    routeCount += foundRouteCount;
+  }
+
+  cache.set(getId(startPoint), routeCount);
+  return routeCount;
 }
 function solve() {
-  const startPoint = grid[0].find((point) => point.value === "S");
-  const finalGrid = drawBeam(startPoint!, grid);
-  // prettyPrintGrid(finalGrid!);
-  return splitCount;
+  const splitters = grid
+    .map((row) => {
+      const ret: Point[] = [];
+      row.forEach((v) => {
+        if (v.value === "^") ret.push(v);
+      });
+      return ret;
+    })
+    .flat()
+    .reverse();
+
+  const lastRow = grid[numberOfRows - 1];
+
+  return lastRow.reduce((acc, point) => {
+    const splitterCache: Map<string, number> = new Map();
+
+    const asd = splitters.map((splitter) => {
+      const count = findAllRoutes(splitter, point, grid, splitterCache);
+      // console.log(`found ${count} routes from point: `);
+      // console.log(splitter);
+      return count;
+    });
+
+    return acc + asd[asd.length - 1];
+  }, 0);
 }
 
 console.log(solve());
