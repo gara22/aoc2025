@@ -6,8 +6,6 @@ const lines = await readFile(`./src/day8/${file}`, {
 
 const rows = lines.split("\n");
 
-const NUMBER_OF_PAIRS = 1000;
-
 type Position = {
   x: number;
   y: number;
@@ -21,6 +19,10 @@ function calculateEuclideanDistance(p1: Position, p2: Position): number {
       Math.pow(p1.y - p2.y, 2) +
       Math.pow(p1.z - p2.z, 2)
   );
+}
+
+function checkConnections(conn: Array<Set<string>>, targetSize: number) {
+  return conn.some((set) => set.size === targetSize);
 }
 
 const positions: Position[] = rows.map((row) => {
@@ -62,12 +64,12 @@ positions.forEach((p1, i) => {
 
 pairs.sort((a, b) => a.distance - b.distance);
 
-const firstN = pairs.slice(0, NUMBER_OF_PAIRS);
-
 const connections: Array<Set<string>> = [];
 
-for (let i = 0; i < firstN.length; i++) {
-  const pair = firstN[i];
+let lastAdded: Pair | undefined = undefined;
+
+for (let i = 0; i < pairs.length; i++) {
+  const pair = pairs[i];
   const connectionIndex1 = connections.findIndex(
     (c) => c?.has(pair.pair[0].toString()) || c?.has(pair.pair[1].toString())
   );
@@ -83,6 +85,10 @@ for (let i = 0; i < firstN.length; i++) {
 
     connections[i].add(pair.pair[0].toString());
     connections[i].add(pair.pair[1].toString());
+    if (checkConnections(connections, positions.length)) {
+      lastAdded = pair;
+      break;
+    }
     continue;
   }
 
@@ -93,6 +99,10 @@ for (let i = 0; i < firstN.length; i++) {
 
     connections[connectionIndex1].add(pair.pair[0].toString());
     connections[connectionIndex1].add(pair.pair[1].toString());
+    if (checkConnections(connections, positions.length)) {
+      lastAdded = pair;
+      break;
+    }
     continue;
   }
 
@@ -103,13 +113,16 @@ for (let i = 0; i < firstN.length; i++) {
     connections[connectionIndex1].add(p)
   );
 
+  if (checkConnections(connections, positions.length)) {
+    lastAdded = pair;
+    break;
+  }
+
   connections[connectionIndex2].clear();
 }
 
-connections.sort((a, b) => b.size - a.size);
-
 function solve() {
-  return connections.slice(0, 3).reduce((acc, set) => acc * set.size, 1);
+  return lastAdded?.pair[0].x! * lastAdded?.pair[1].x!;
 }
 
 console.log(solve());
